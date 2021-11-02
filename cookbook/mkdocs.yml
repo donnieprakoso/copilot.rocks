@@ -1,0 +1,32 @@
+site_name: Copilot.rocks 🤘🏻
+theme:
+  name: material
+  features:
+  - navigation.expand
+  palette:
+    - scheme: default
+      primary: black
+      accent: orange    
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to dark mode
+    - scheme: slate 
+      primary: black
+      accent: orange    
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode
+plugins:
+  - search
+
+markdown_extensions:
+  - pymdownx.critic
+  - pymdownx.caret
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.tilde  
+#   - social
+extra:
+  analytics:
+    provider: google
+    property: G-XXXXXXXXXX
