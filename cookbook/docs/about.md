@@ -4,10 +4,10 @@ The objective of Copilot.rocks is to help developers to get started with AWS Cop
 
 The content of Copilot.rocks is in form of a workshop and structured as:
 
-1. Situation
+1. Context
 1. Solution
 1. Step-by-Step Guide
-1. Conclusion
+1. Conclusion (optional)
 
 Some of the workshops also includes diagram architecture to make it easier to understand.
 
