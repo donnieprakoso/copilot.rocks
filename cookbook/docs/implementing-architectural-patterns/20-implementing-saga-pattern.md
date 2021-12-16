@@ -2,6 +2,6 @@
 
 {==
 
-This workshop is scheduled to be published on 1 December, 2021
+This workshop is scheduled to be published on 31 December, 2021
 
 ==}
