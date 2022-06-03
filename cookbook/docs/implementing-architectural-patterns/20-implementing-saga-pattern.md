@@ -2,6 +2,6 @@
 
 {==
 
-This workshop is scheduled to be published on 31 December, 2021
+☕️ Still brewing. Almost there. ETA Publish on June 10th.
 
 ==}
