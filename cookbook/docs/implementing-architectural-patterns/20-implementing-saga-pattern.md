@@ -1,10 +1,23 @@
-# How to implement Saga pattern with Copilot?
+# How-To: Implement Saga Pattern with Copilot
 
 > The solution in this tutorial uses AWS Copilot and the AWS CDK. At the time this article was written, AWS Copilot did not yet have integration with the AWS CDK. The solution presented is less than ideal, and is a workaround. Even so, this is a workaround that I think is the cleanest among the approaches. Happy building!
 
+## Tl;dr
+
+This tutorial is longer than the other tutorials. For those of you who have experience working with AWS Copilot and AWS CDK, here is a summary of the steps you need to do:
+
+1. All the code for the service that must be deployed is in the `saga-pattern/app` folder
+2. All code for state machine with AWS StepFunctions, SSM Parameter Store and IAM role is in `saga-pattern/cdk` folder
+3. To deploy, use the command `copilot svc deploy --name <SERVICE_NAME> --env test`
+4. Copy all ECS Task Roles created by Copilot with the command `copilot svc show --name <SERVICE_NAME> --resources`
+5. Configure all ECS Task Roles as key-value into `cdk.context.json`
+6. Deploy CDK with command `cdk deploy`
+7. Perform testing from [AWS Step Functions dashboard](https://ap-southeast-1.console.aws.amazon.com/states/home?region=ap-southeast-1#/statemachines)
+8. Clean up with `copilot app delete` and `cdk destroy` commands
+
 ## Context
 
-One of the challenges in microservices architecture is how we can maintain data consistency. In this tutorial, I'll explain how you can implement the Saga pattern to maintain data consistency. We will build a Saga orchestration using AWS Step Functions and an application running on top of AWS Fargate using Amazon ECS, which is deployed using AWS Copilot.
+One of the challenges in microservices architecture is how we can maintain data consistency. In this tutorial, I'll explain how you can implement the Saga pattern to maintain data consistency. We will build a Saga orchestration using AWS Step Functions and services running on top of AWS Fargate using Amazon ECS, which is deployed using AWS Copilot.
 
 Microservices consist of various services that are independent but related to each other. In other words, a request received by the system will most likely be handled by more than one service and data will be transferred from one service to the related service.
 
@@ -18,7 +31,7 @@ Saga pattern is one solution to handle transactions by managing local transactio
 
 Compensating transaction in its simplest definition is the ability to undo the effects of activities that have been performed. It should be noted here that compensating transactions must be implemented by every service in the microservices that are part of the Saga, and are generally very service-specific. There are two important characteristics in compensating transactions, namely idempotent and retryable — with the aim of the service being able to handle transactions that have already occurred.
 
-There are two commonly used approaches for implementing the Saga pattern, namely orchestration and choreography. In this tutorial, I will explain how to implement the Saga pattern using orchestration. Orchestration for Saga will be handled by AWS Step Functions, and applications handling requests will be handled by AWS Fargate using AWS Copilot.
+There are two commonly used approaches for implementing the Saga pattern, namely orchestration and choreography. In this tutorial, I will explain how to implement the Saga pattern using orchestration. Orchestration for Saga will be handled by AWS Step Functions, and services handling requests will be handled by AWS Fargate running on Amazon ECS.
 
 ## Example: Place Order in e-Commerce
 
@@ -28,7 +41,7 @@ As an example, consider the microservices diagram for e-Commerce below. This is 
 
 1. When the user makes a `Place Order`, the request will be received by the `Inventory Service` to check whether the selected item is in the warehouse and update it.
 2. If all items are available, the request will then be processed by `Payment Service`, to process the payment.
-3. If the payment is successful, the request will then be processed by `Logistic Service` to prepare the goods and sent to the buyer's address.
+3. If the payment is successful, the request will then be processed by `Logistic Service` to prepare the goods and sent to the customer.
 
 Ideally, all requests at any point will be fulfilled successfully by each service. However, what if there is a failure when `Logistic Service` processes the delivery order? This is a challenge in maintaining data consistency. In other words, to maintain data consistency, every transaction that has been processed by `Payment Service` and `Inventory Service` must be rolled back with a compensating transaction approach.
 
@@ -36,17 +49,17 @@ Ideally, all requests at any point will be fulfilled successfully by each servic
 
 By using the Saga pattern, we can maintain data consistency for the above case — to be able to overcome process failures that occur at every step in processing transactions.
 
-As mentioned earlier, we'll be using AWS Step Functions to act as the Saga orchestrator in this tutorial. With AWS Step Functions, we can create workflows called `state machines`. In the `state machine`, we can define the steps we need, which are called `state`. These `state` can be `task`, `choice`, `wait`, `parallel` and others which we can combine as needed.
+As mentioned earlier, we'll be using AWS Step Functions to act as the Saga orchestrator in this tutorial. With AWS Step Functions, we can create workflows in a state machine. In the state machine, we can define the steps we need, which are called `state`. These `state` can be `task`, `choice`, `wait`, `parallel` and others which we can combine as needed.
 
 In this tutorial, we will combine several types of `state`, namely:
 
 1. `task` with type `activity` — which will be processed by our application
-2. `choice` which will help us to determine the flow of state
-3. `succeed` and `fail` state to identify the final result of the workflow
+2. `choice` —± which will help us to determine the flow of state
+3. `succeed` and `fail` state — which to identify the final result of the workflow
 
 ## Architecture Diagrams
 
-The diagram below provides an overall picture of a the architecture of the application that we will build in this tutorial. The transaction starts when the API receives a request for a `Place Order` — which usually comes from a website — which will then be handled by the `Order Service`. `Order Service` here which will trigger to start the state machine inside AWS Step Functions.
+The diagram below provides an overall picture of a the architecture that we will build in this tutorial. The transaction starts when the API receives a request for a `Place Order` — which usually comes from a website — which will then be handled by the `Order Service`. `Order Service` here will trigger the state machine inside AWS Step Functions.
 
 ![](/assets/sagaPattern-architecture.png)
 
@@ -60,8 +73,8 @@ If the request is successfully processed, the request will be forwarded to the `
 
 And if the whole process goes well, then the request will be declared as successful `Transaction Success`. From here, we can continue the process of sending notifications and even forming invoices to be sent to customers.
 
-**Notes**
-One thing to note here is, in every processing failure, our system needs to have a service that can handle the business logic for compensating transactions. This is important to minimize effect propagation. Each service in this tutorial uses simple business logic, using the probability between `success` or `failed`.
+**Notes**  
+One thing to note here is, in every processing failure, our system needs to have a service that can handle the business logic for compensating transactions. This is important to minimize effect propagation. Each service in this tutorial uses simple business logic, using the probability between `True` or `False`.
 
 ## Preparation tutorials
 
@@ -77,7 +90,7 @@ To run this tutorial, please use the following information for preparation:
 
 ## Step-by-step Guide
 
-Don't forget to get to do the steps already mentioned in the "Tutorial Preparation". The steps described below, will skip the `copilot init` and `copilot env` sections and assume that you already have them in your environment. Therefore, the tutorial will start with deployment services as well as provisioning services with the AWS CDK.
+Don't forget to do the steps mentioned in the "Tutorial Preparation". The steps described below, will skip the `copilot init` and `copilot env` and assume that you already have them completed. Therefore, the tutorial will start with deployment services as well as provisioning services with the AWS CDK.
 
 ### Step 0: Git All Source Codes
 
@@ -95,7 +108,7 @@ Using SSH
 git clone git@github.com:donnieprakoso/copilot.rocks.git
 ```
 
-Codes — be it CDK or Copilot app — are in the `codes/saga-pattern` subfolder which you'll get when you successfully clone this repo. Here is the structure of the `codes/saga-pattern` folder — `app` is the folder that has all the source code for the service, and `cdk` contains the source code for the AWS CDK:
+Codes — both CDK and Copilot services — are in the `codes/saga-pattern` subfolder which you'll get when you successfully clone this repo. Here is the structure of the `codes/saga-pattern` folder — `app` is the folder that has all the source code for the service, and `cdk` contains the source code for the AWS CDK:
 
 ```bash
 dev> tree saga-pattern/
@@ -132,6 +145,7 @@ saga-pattern/
     └── requirements.txt
 ```
 
+**Notes**  
 One note for the CDK, this tutorial assumes that you have at least worked with the AWS CDK. Codes for CDK are already available in the `cdk` folder. If you have never worked with AWS CDK, you will need to follow the setup instructions provided in the "Tutorial Preparation" section.
 
 ### Step 1: Deploy Services
@@ -151,9 +165,11 @@ Before we move on to deployment for all services, it's a good idea to take the t
 
 ##### Code Review: Inventory Process
 
-This process will poll the `activity` — which occurs in the state machine — to get its data. For the complete code, you can see it directly at this link. This section will describe only some of the most important.
+This process will poll the `activity` — which occurs in the state machine — to get its data. For the complete code, you can see it directly at this [link](https://github.com/donnieprakoso/copilot.rocks/blob/main/codes/saga-pattern/app/worker_inventory/app.py). This section will describe only some of the most important.
 
-To be able to connect with AWS Step Functions, we need `Activity ARN`. Usually, you can use ARNs directly from AWS StepFunctions, but since this time we will be integrating between AWS Copilot and AWS CDK, the implementation will be a bit complex. In the following snippet, you can see that `Activity ARN` is fetched from the SSM Parameter Store. This SSM Parameter Store is created by the AWS CDK, and all `Activity ARN`s are placed in SSM. This will be explained further in the CDK section, and for now you just need to know that all `Activity ARN`s are loaded from SSM.
+To be able to connect with AWS Step Functions, we need `Activity ARN`. Usually, you can use ARNs directly from AWS StepFunctions, but since this time we will be integrating between AWS Copilot and AWS CDK, the implementation will be a bit complex.
+
+In the following snippet, you can see that `Activity ARN` is fetched from the SSM Parameter Store. This SSM Parameter Store is created by the AWS CDK, and all `Activity ARN`s are placed in SSM. This will be explained further in the CDK section, and for now you just need to know that all `Activity ARN`s are loaded from SSM.
 
 ```python
 _ssm = boto3.client('ssm')
@@ -182,7 +198,7 @@ if __name__ == '__main__':
                 if process():
 ```
 
-Function `process()` itself is a simple function, by doing randomize number. Function and assigning a condition with a high chance probability will return `True`.
+Function `process()` itself is a simple function — by doing randomization — and return high chance probability of `True`, which indicates local transaction is processed successfully.
 
 ```python
 def process():
@@ -224,7 +240,7 @@ activity_arns = json.loads(_ssm.get_parameter(
 SFN_ACTIVITY_ARN = activity_arns['inventory-rollback']
 ```
 
-After that, the service will get input from the previous process, and update the `inventory_rollback` and `inventory_result` payloads. These two properties will have no effect in the state machine, because it is only necessary to implement a compensating transaction to undo the previous process.
+After that, the service will get input from the previous process, and update the `inventory_rollback` and `inventory_result` payloads. These two properties will have no effect in the state machine, because it is only to implement a sample of compensating transaction to undo the previous process.
 
 ```python
 input_payload = json.loads(response["input"])
@@ -490,7 +506,7 @@ Here is the file from `codes/saga-pattern/cdk/cdk.context.json` that you can use
 }
 ```
 
-In this app, the context for ECS Task Roles is defined in the `list_ecs_task_roles` property which is a key-value. All you need to do in this step is change the ARN value— for example `saga-pattern-test-worker-inventory-TaskRole-XXXXXXXXXXXX` to your own ARN.
+In this app, the context for ECS Task Roles is defined in the `list_ecs_task_roles` property which is a key-value. All you need to do in this step is change the ARN value— for example `saga-pattern-test-worker-inventory-TaskRole-XXXXXXXXXXXX` to your own Task Role ARN.
 
 #### Code Review: CDK
 
@@ -537,7 +553,7 @@ After that, we also need to define the `state` so that we can identify which tra
 
 ```python
 state_succeed = _sfn.Succeed(self, "Transaction success")
-state_failed = _sfn.Succeed(self, "Transaction failed")
+state_failed = _sfn.Fail(self, "Transaction failed")
 ```
 
 ##### Defining Flow with Choice

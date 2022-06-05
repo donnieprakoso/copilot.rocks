@@ -1,4 +1,4 @@
-# How To Implement Service Discovery
+# How-To: Implement Service Discovery
 
 ## Context
 

@@ -1,4 +1,4 @@
-# How To Implement Pub/sub
+# How-To: Implement Pub/sub
 
 ## Context
 
