@@ -1,0 +1,12 @@
+{
+  "aws-cdk:enableDiffNoFail": "true",
+  "acknowledged-issue-numbers": [],
+  "list_ecs_task_roles": {
+    "worker_inventory": "CHANGE TO YOUR ROLE ARN",
+    "worker_inventory_rollback": "CHANGE TO YOUR ROLE ARN",
+    "worker_payment": "CHANGE TO YOUR ROLE ARN",
+    "worker_payment_rollback": "CHANGE TO YOUR ROLE ARN",
+    "worker_logistic": "CHANGE TO YOUR ROLE ARN",
+    "worker_logistic_rollback": "CHANGE TO YOUR ROLE ARN"
+  }
+}
