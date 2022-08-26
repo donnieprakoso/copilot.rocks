@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-uWxY/CJNBR+1zjPWmfnSnVxwRheevXITnMqoEIeG1LJrdI0GlVs/9cVSyPYXdcSF" crossorigin="anonymous">
+
+    <title>Hello, world!</title>
+</head>
+
+<body>
+    <div class="container mt-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h1 class="card-title">
+                    Hello from AWS Copilot!
+                </h1>
+                <a href="https://copilot.rocks" class="btn btn-primary">Get started with AWS Copilot</a>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-sm-6">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h3 class="card-title">{{data.machine}}</h3>
+                        <p class="card-text">Platform Machine</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h3 class="card-title">{{data.system}}</h3>
+                        <p class="card-text">Platform System</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-3">
+
+            <div class="col-sm-6">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h3 class="card-title">{{data.cpu_usage}}</h3>
+                        <p class="card-text">CPU Usage</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-sm-6">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h3 class="card-title">{{data.virtual_memory}}</h3>
+                        <p class="card-text">Virtual Memory</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+
+
+</body>
+
+</html>
